@@ -20,7 +20,7 @@ In a terminal, move to the project, then install all the depedencies:
   npm i
 ```
 
-Create a new PostgreSQL database and then import into it what's in the database directory.
+Create a new PostgreSQL database and then import into it what's in the "./Database" directory.
 
 Go to the "./api_rest" directory, go to the db.js file then set your database:
 ```js
