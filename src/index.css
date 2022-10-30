@@ -5,9 +5,69 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: rgb(253, 253, 253);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+/* ============================ Header ============================ */
+.black0{
+  background-color: rgb(48, 44, 60);
+}
+.black1{
+  background-color: rgb(65, 60, 82);
+}
+header {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+  height: 70px;
+  box-shadow: 0px 0px 20px 10px rgba(0, 0, 0, 0.05);
+}
+header > a { 
+  color: white;
+  text-decoration: none;
+  height: 100%;
+  width: 150px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  transition: .33s;
+}
+header > a:hover {
+  width: 180px;
+  transition: .33s;
+}
+
+
+/* ============================ Grid ============================ */
+.grid{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin:20px;
+}
+.grid > div {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.cell{
+  width:50px;
+  height:50px;
+  background-color: rgb(255, 255, 255);
+  border: solid rgb(106, 106, 106) 1px;
+  transition: .4s;
+}
+.grid .cell:hover{
+  background-color: rgb(227, 227, 227);
+  transition: .4s;
 }
