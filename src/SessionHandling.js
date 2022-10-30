@@ -14,7 +14,7 @@ export function SingleSession() {
     const updateCell = (e) => {
         if (winner) { return true; }
         let cell = e.target.id.split(",").map(string => { return Number(string) });
-        if (grid[cell[0]][cell[1]] === "X" || grid[cell[0]][cell[1]] === "O") { return console.log("nope"); };
+        if (grid[cell[0]][cell[1]] === "X" || grid[cell[0]][cell[1]] === "O") { return false; };
 
         grid[cell[0]][cell[1]] = turn === "player1" ? "X" : "O";
         setTurn(turn === "player1" ? "player2" : "player1");
@@ -99,37 +99,34 @@ export function MultiSession() {
     const [grid, setGrid] = useState([]);
     const [turn, setTurn] = useState();
     const [winner, setWinner] = useState();
-    const [message, setMessage] = useState();
     const [player1, setPlayer1] = useState();
     const [player2, setPlayer2] = useState();
 
     const updateCell = async (e) => {
+        // Updates the content of the grid upon clicking on a cell.
+
+        // === Fetch some data and see if the 2nd player joined the game before being able to play. ===
         const url = `http://localhost:4000/api/game/${params["token"]}`;
+        // Attaches a header onto the request, to identify in the back-end who is sending the mssage (if it's the player 1 or 2)
         axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-
         const cell = e.target.id.split(",").map(string => { return Number(string) });
-
         const res = await axios.get(url);
         if (res.data === "Waiting for a 2nd player...") {
-            setMessage(res.data);
             return false;
         }
 
+        // === Sends the information of which grid has been clicked on and then updates the content on the screen===
         const data = {
             cell: cell,
             grid: grid,
         }
-
         const res2 = await axios.put(url, data);
         switch (res2.data.message) {
             case "nope":
-                setMessage("Your are not allowed to do this.");
                 return false;
             case "Not your turn.":
-                setMessage(res2.data.message);
                 return false;
             case "It's not your turn yet.":
-                setMessage(res2.data.messsage);
                 return false;
             case player1:
                 setWinner(player1);
@@ -144,20 +141,18 @@ export function MultiSession() {
     }
 
     const changeGridSize = async (e) => {
-        if(e.target.value < 1 ){e.target.value = 2;}
-        else if(e.target.value > 15 ){e.target.value = 15;}
+        if (e.target.value < 1) { e.target.value = 2; }
+        else if (e.target.value > 15) { e.target.value = 15; }
         setGridLength(e.target.value);
         const url = `http://localhost:4000/api/game/changeGrid/${params["token"]}`;
-        const res = await axios.put(url, {gridLength:e.target.value});
+        const res = await axios.put(url, { gridLength: e.target.value });
     }
 
     useEffect(() => {
-        console.log(params["token"]);
         axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
         const update = async () => {
             const url = `http://localhost:4000/api/game/${params["token"]}`;
             const res = await axios.get(url);
-            setMessage(res.data);
         }
         setInterval(async () => {
             const url2 = `http://localhost:4000/api/game/`;
@@ -173,12 +168,13 @@ export function MultiSession() {
 
     return (
         <section className="grid">
-            {message}
+            <input className="CTA" type="button" value="Copy the room's code to the clipboard" onClick={e => { navigator.clipboard.writeText(params["token"]) }} />
             <p>
-                Player 1: {player1}<br/>
-                Player 2: {player2}<br/>
+                Player 1(X): {player1}<br />
+                Player 2(O): {player2}<br />
                 Current turn: {turn}
             </p>
+
             <div>
                 <label target="SizeSetter">Set size</label>
                 <input name="SizeSetter" type="number" onChange={(e) => changeGridSize(e)} min="2" max="15" />
@@ -250,7 +246,7 @@ export function HostSession() {
         const gameURL = "/Multi/Game/" + res.data.token;
         localStorage.setItem("token", res.data.token);
         axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-        setGameLink(React.createElement("a", { href: gameURL }, "Game created, click here to join."));
+        setGameLink(React.createElement("a", { href: gameURL, className:"roomLink" }, "Game created, click here to join."));
     }
     const handleSubmitJoin = async (e) => {
         e.preventDefault();
@@ -270,23 +266,30 @@ export function HostSession() {
     }
 
     return (
-        <section>
+        <section className="setMulti">
             <form onSubmit={(e) => handleSubmitHost(e)}>
-                <label target="player1">Player Name</label> <br />
-                <input name="player1" id="player1" type="text" onChange={e => setPlayer1(e.target.value)} required /> <br />
-
-                <input type="submit" value="Create room" />
+                <legend>Host a game</legend>
+                <div>
+                    <label target="player1">Player Name</label> <br />
+                    <input name="player1" id="player1" type="text" onChange={e => setPlayer1(e.target.value)} required /> <br />
+                </div>
+                <input className="CTA" type="submit" value="Create room" />
+                {gameLink}
             </form>
             <form onSubmit={(e) => handleSubmitJoin(e)}>
-                <label target="player2">Player Name</label> <br />
-                <input name="player2" id="player2" type="text" onChange={e => setPlayer2(e.target.value)} required /> <br />
+                <legend>Join a game</legend>
+                <div>
+                    <label target="player2">Player Name</label> <br />
+                    <input name="player2" id="player2" type="text" onChange={e => setPlayer2(e.target.value)} required /> <br />
+                </div>
+                <div>
+                    <label target="room">Room's code</label> <br />
+                    <input name="room" id="room" type="text" onChange={e => setGameToken(e.target.value)} required /> <br />
+                </div>
 
-                <label target="room">Room's link</label> <br />
-                <input name="room" id="room" type="text" onChange={e => setGameToken(e.target.value)} required /> <br />
-
-                <input type="submit" value="Join room" />
+                <input className="CTA" type="submit" value="Join room" />
             </form>
-            {gameLink}
+
         </section>
     )
 }

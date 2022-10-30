@@ -12,14 +12,16 @@ const getGameState = (req, res) => {
 }
 
 const addGame = (req, res) => {
-    const { player1, size } = req.body;
+    const { player1 } = req.body;
+
+    const grid = functions.makeGrid(3);
 
     pool.query(queries.addUID, (error, results) => {
         if (error) throw error;
         let uuid = results.rows[0]["uuid_generate_v4"];
         let today = functions.getTimeNow();
 
-        pool.query(queries.addGame, [uuid, player1, size, today], (error, results) => {
+        pool.query(queries.addGame, [uuid, player1, grid, today, "Waiting for a 2nd player..."], (error, results) => {
             if (error) throw error;
             const gameData = {
                 player1: player1,
@@ -37,7 +39,7 @@ const setGame = (req, res) => {
         if (error) throw error;
         else if (!result.rows[0].player2 && res.locals.player_info.playerType == "host") { res.status(200).send("Waiting for a 2nd player...") }
         else if (!result.rows[0].player2 && res.locals.player_info.playerType == "join") {
-            pool.query(queries.setPlayer2, [res.locals.player_info.game_id, res.locals.player_info.player2], (error, result) => {
+            pool.query(queries.setPlayer2, [res.locals.player_info.game_id, res.locals.player_info.player2, result.rows[0].player1], (error, result) => {
                 if (error) throw error;
                 res.status(200).send("A new player has joined the game named " + res.locals.player_info.player2 + ".");
             })
@@ -56,17 +58,8 @@ const updateGame = (req, res) => {
         if (error) throw error;
         let turn = result.rows[0].turn;
         let message;
-        if (!result.rows[0].winner || result.rows[0].winner  === "none") {
-            // =============== First turn ===============
-            if (!turn && res.locals.player_info.playerType == "join") {
-                message = "It's not your turn yet.";
-            }
-            if (!turn && res.locals.player_info.playerType == "host") {
-                grid[cell[0]][cell[1]] = "X";
-                turn = result.rows[0].player2;
-
-                // =============== Next turns ===============
-            } else if (turn == res.locals.player_info.player1 && res.locals.player_info.playerType == "host") {
+        if (!result.rows[0].winner || result.rows[0].winner === "none") {
+            if (turn == res.locals.player_info.player1 && res.locals.player_info.playerType == "host") {
                 grid = result.rows[0].grid;
                 if (grid[cell[0]][cell[1]] === "X" || grid[cell[0]][cell[1]] === "O") { message = "nope"; }
                 else {
@@ -94,33 +87,24 @@ const updateGame = (req, res) => {
                 if (error) throw error;
                 res.status(200).send({ grid: grid, message: message });
             });
-        }else{res.status(200).send({ grid: grid, message: result.rows[0].winner });}
+        } else { res.status(200).send({ grid: grid, message: result.rows[0].winner }); }
 
     })
 }
 
 const changeGridSize = (req, res) => {
-    const {gridLength} = req.body;
+    const { gridLength } = req.body;
 
     pool.query(queries.getGameState, [res.locals.player_info.game_id], (error, result) => {
-        if(error) throw error;
+        if (error) throw error;
 
-        let thisGrid = [];
-        let row = [];
-
-        for (let i = 0; i < gridLength; i++) {
-            row.push(" ");
-        }
-        for (let i = 0; i < gridLength; i++) {
-            thisGrid.push([...row]);
-        }
-
-        pool.query(queries.updateGame, [result.rows[0].game_id, result.rows[0].player1, thisGrid, "none"], (error, result) => {
-            if(error) throw error;
+        const grid = functions.makeGrid(gridLength);
+        pool.query(queries.updateGame, [result.rows[0].game_id, result.rows[0].player1, grid, "none"], (error, result) => {
+            if (error) throw error;
             res.status(200).send("New grid");
         })
     })
-    
+
 }
 
 const generateToken = (req, res) => {

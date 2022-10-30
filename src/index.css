@@ -5,6 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: rgb(48, 44, 60);
   background-color: rgb(253, 253, 253);
 }
 
@@ -70,4 +71,45 @@ header > a:hover {
 .grid .cell:hover{
   background-color: rgb(227, 227, 227);
   transition: .4s;
+}
+
+/* ============================ Page: create/join room ============================ */
+.setMulti{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin: 30px;
+}
+.setMulti form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.setMulti form legend {
+  font-size: 1.3em;
+  font-weight:700;
+  margin-bottom: 10px;
+}
+.roomLink {
+  color:rgb(91, 110, 233);
+}
+
+/* ============================ Other ============================ */
+/* Multi session page */
+.CTA{
+  background-color: rgb(65, 60, 82);
+  color: white;
+  border: solid 1.5px rgb(65, 60, 82);
+  font-size: 1.2em;
+  margin-top: 10px;
+  padding: 10px 30px 10px 30px;
+  transition: .4s;
+}
+.CTA:hover{
+  transition: .4s;
+  background-color: white;
+  color:rgb(65, 60, 82);
 }

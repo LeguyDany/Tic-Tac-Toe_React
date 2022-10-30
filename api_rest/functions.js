@@ -64,6 +64,20 @@ function checkFinish(player1, player2, grid) {
     return winner;
 }
 
+function makeGrid(gridLength) {
+    let thisGrid = [];
+    let row = [];
+
+    for (let i = 0; i < gridLength; i++) {
+        row.push(" ");
+    }
+    for (let i = 0; i < gridLength; i++) {
+        thisGrid.push([...row]);
+    }
+    
+    return thisGrid;
+}
+
 // =================================== Middlewares ===================================
 function checkUser(req, res, next) {
     // Checks if it's the game's host or the 2nd player who makes the API request.
@@ -95,5 +109,6 @@ function checkUser(req, res, next) {
 module.exports = {
     getTimeNow,
     checkUser,
-    checkFinish
+    checkFinish,
+    makeGrid,
 }
