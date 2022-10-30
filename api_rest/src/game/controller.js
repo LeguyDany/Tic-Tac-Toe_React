@@ -58,6 +58,7 @@ const updateGame = (req, res) => {
         if (error) throw error;
         let turn = result.rows[0].turn;
         let message;
+
         if (!result.rows[0].winner || result.rows[0].winner === "none") {
             if (turn == res.locals.player_info.player1 && res.locals.player_info.playerType == "host") {
                 grid = result.rows[0].grid;
