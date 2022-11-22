@@ -3,6 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import './index.css';
 import axios from 'axios';
 
+import socketIO from 'socket.io-client';
+
+const socket = socketIO.connect('http://localhost:4000');
+
 export function SingleSession() {
     // PLay a match locally
 
@@ -101,26 +105,38 @@ export function MultiSession() {
     const [winner, setWinner] = useState();
     const [player1, setPlayer1] = useState();
     const [player2, setPlayer2] = useState();
+    const [makeChanges, setMakechanges] = useState(false);
+
+    axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
 
     const updateCell = async (e) => {
+
         // Updates the content of the grid upon clicking on a cell.
 
         // === Fetch some data and see if the 2nd player joined the game before being able to play. ===
         const url = `http://localhost:4000/api/game/${params["token"]}`;
         // Attaches a header onto the request, to identify in the back-end who is sending the mssage (if it's the player 1 or 2)
-        axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-        const cell = e.target.id.split(",").map(string => { return Number(string) });
+        // axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
+
         const res = await axios.get(url);
         if (res.data === "Waiting for a 2nd player...") {
             return false;
         }
 
-        // === Sends the information of which grid has been clicked on and then updates the content on the screen===
+        const cell = e.target.id.split(",").map(string => { return Number(string) });
+
         const data = {
+            token: params["token"],
             cell: cell,
-            grid: grid,
-        }
+            grid: grid
+        };
+
+        // === Sends the information of which grid has been clicked on and then updates the content on the screen ===
         const res2 = await axios.put(url, data);
+
+        // Notification to the back-end to update screens for both players.
+        socket.emit('playerTurn', data);
+
         switch (res2.data.message) {
             case "nope":
                 return false;
@@ -146,28 +162,39 @@ export function MultiSession() {
         setGridLength(e.target.value);
         const url = `http://localhost:4000/api/game/changeGrid/${params["token"]}`;
         const res = await axios.put(url, { gridLength: e.target.value });
+
+        // Notification to the back-end to update screens for both players.
+        socket.emit('playerTurn', {token: params["token"]});
+    }
+
+    const updatePlayer = async () => {
+        const url = `http://localhost:4000/api/game/`;
+        const res = await axios.get(url);
+        setPlayer1(res.data.player1);
+        setPlayer2(res.data.player2);
+    }
+    const updateGrid = () => {
+        socket.on('updateGrid' + params["token"], async (data) => {
+            const url = `http://localhost:4000/api/game/`;
+            const res = await axios.get(url);
+            setPlayer1(res.data.player1);
+            setPlayer2(res.data.player2);
+            setTurn(res.data.turn);
+            setWinner(res.data.winner);
+            if (res.data.grid) {
+                setGrid(res.data.grid)
+            };
+        });
     }
 
     useEffect(() => {
-        axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-        const update = async () => {
-            const url = `http://localhost:4000/api/game/${params["token"]}`;
-            const res = await axios.get(url);
-        }
-        setInterval(async () => {
-            const url2 = `http://localhost:4000/api/game/`;
-            const res2 = await axios.get(url2);
-            setPlayer1(res2.data.player1);
-            setPlayer2(res2.data.player2);
-            setTurn(res2.data.turn);
-            setWinner(res2.data.winner);
-            if (res2.data.grid) { setGrid(res2.data.grid) }
-        }, 1000);
-        update();
+        updatePlayer();
+        updateGrid();
     }, []);
 
     return (
         <section className="grid">
+            <script src="/socket.io/socket.io.js"></script>
             <input className="CTA" type="button" value="Copy the room's code to the clipboard" onClick={e => { navigator.clipboard.writeText(params["token"]) }} />
             <p>
                 Player 1(X): {player1}<br />
@@ -246,7 +273,7 @@ export function HostSession() {
         const gameURL = "/Multi/Game/" + res.data.token;
         localStorage.setItem("token", res.data.token);
         axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-        setGameLink(React.createElement("a", { href: gameURL, className:"roomLink" }, "Game created, click here to join."));
+        setGameLink(React.createElement("a", { href: gameURL, className: "roomLink" }, "Game created, click here to join."));
     }
     const handleSubmitJoin = async (e) => {
         e.preventDefault();

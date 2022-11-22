@@ -1,8 +1,11 @@
+const axios = require('axios');
 const pool = require('../../db');
 const queries = require('./queries');
 const functions = require('../../functions');
 require("dotenv").config();
 const jwt = require('jsonwebtoken');
+
+
 
 const getGameState = (req, res) => {
     pool.query(queries.getGameState, [res.locals.player_info.game_id], (error, result) => {
@@ -119,9 +122,11 @@ const generateToken = (req, res) => {
         playerType: "join"
     }
 
-    token = jwt.sign(playerInfo, process.env.ACCESS_TOKEN_SECRET);
-    res.status(200).json({ token: token });
-
+    pool.query(queries.setPlayer2, [decrypt_token.game_id, player2, decrypt_token.player1], (error, result) => {
+        if (error) throw error;
+        newToken = jwt.sign(playerInfo, process.env.ACCESS_TOKEN_SECRET);
+        res.status(200).json({ token: newToken });
+    })
 }
 
 module.exports = {
@@ -130,5 +135,5 @@ module.exports = {
     getGameState,
     generateToken,
     updateGame,
-    changeGridSize
+    changeGridSize,
 }
