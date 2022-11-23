@@ -48,10 +48,16 @@ http.listen(port, () => {
 
 // On connection of the players
 socketIO.on('connection', (socket) => {
+    
+    // Upon joining a room, creates a special room for the socket with the given token as the room's name
+    socket.on('playerJoin', (data) => {
+        socket.join(data.token);
+        socketIO.to(data.token).emit('updateGrid', "Update of the grid needed");
+    })
 
     // If the front-end emits a 'playerTurn', sends a notification to tell the front-end of both players to update their grid layout with the newly updated grid layout from the database.
     socket.on('playerTurn', (data) => {
-        socketIO.emit('updateGrid'+data.token, "Update of the grid needed");
+        socketIO.to(data.token).emit('updateGrid', "Update of the grid needed");
     })
 
     // When a player disconnects

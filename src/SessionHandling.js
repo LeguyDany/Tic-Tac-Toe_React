@@ -225,7 +225,6 @@ export function MultiSession() {
     const [winner, setWinner] = useState();
     const [player1, setPlayer1] = useState();
     const [player2, setPlayer2] = useState();
-    const [makeChanges, setMakechanges] = useState(false);
 
     axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
 
@@ -294,7 +293,7 @@ export function MultiSession() {
         setPlayer2(res.data.player2);
     }
     const updateGrid = () => {
-        socket.on('updateGrid' + params["token"], async (data) => {
+        socket.on('updateGrid', async (data) => {
             const url = `http://localhost:4000/api/game/`;
             const res = await axios.get(url);
             setPlayer1(res.data.player1);
@@ -310,6 +309,7 @@ export function MultiSession() {
     useEffect(() => {
         updatePlayer();
         updateGrid();
+        socket.emit('playerJoin', {token: params["token"]});
     }, []);
 
     return (
