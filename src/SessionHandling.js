@@ -1,12 +1,61 @@
+// ====================================================== Notice ======================================================
+// This page will handle all the logic needed for the front-end. It will also display the pages needed.
+
+
+// ====================================================== Imports ======================================================
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import './index.css';
 import axios from 'axios';
-
 import socketIO from 'socket.io-client';
 
+
+// ====================================================== Setup ======================================================
 const socket = socketIO.connect('http://localhost:4000');
 
+
+// ====================================================== Children ======================================================
+function Grid(props) {
+    // Draws a grid on which we can play tic tac toe.
+
+    const makeGrid = () => {
+        // Creates a new grid with a bidimensional array
+        // Time complexity: O(2n)
+        let thisGrid = [];
+        let row = [];
+
+        for (let i = 0; i < props.gridLength; i++) {
+            row.push(" ");
+        }
+        for (let i = 0; i < props.gridLength; i++) {
+            thisGrid.push([...row]);
+        }
+
+        props.setGrid(thisGrid);
+    }
+
+    useEffect(() => {
+        makeGrid();
+        props.setWinner();
+    }, [props.gridLength]);
+
+    return (
+        <article>
+            {props.grid.map((element, colIndex) => (
+                <div key={colIndex + "div"}>
+                    {element.map((cell, rowIndex) => (
+                        <input className="cell" type="submit" value={props.grid[colIndex][rowIndex]} key={colIndex + ", " + rowIndex}
+                            onClick={e => { props.updateCell(e) }} id={colIndex + "," + rowIndex} />
+                    ))}
+                    <br key={colIndex + ", br"} />
+                </div>
+            ))}
+        </article>
+    )
+}
+
+// ====================================================== Components ======================================================
+// ----------------------------------- Solo mode -----------------------------------
 export function SingleSession() {
     // PLay a match locally
 
@@ -91,6 +140,77 @@ export function SingleSession() {
                 <p>Winner: {winner}</p>
             </div>
             <Grid gridLength={gridLength} setGrid={setGrid} setWinner={setWinner} grid={grid} updateCell={updateCell} />
+        </section>
+    )
+}
+
+// ----------------------------------- Multi mode -----------------------------------
+export function HostSession() {
+    // Page with 2 forms: 1 for hosting a game, the other for joining a game.
+
+    const navigate = useNavigate();
+    const [player1, setPlayer1] = useState();
+    const [player2, setPlayer2] = useState();
+    const [gameToken, setGameToken] = useState();
+    const [gameLink, setGameLink] = useState();
+
+    const handleSubmitHost = async (e) => {
+        e.preventDefault();
+        const data = {
+            player1: player1,
+        }
+        const url = "http://localhost:4000/api/game";
+        const res = await axios.post(url, data);
+
+        axios.defaults.headers.common['Authorization'] = `Bearer ` + res.data.token;
+
+        const gameURL = "/Multi/Game/" + res.data.token;
+        localStorage.setItem("token", res.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
+        setGameLink(React.createElement("a", { href: gameURL, className: "roomLink" }, "Game created, click here to join."));
+    }
+    const handleSubmitJoin = async (e) => {
+        e.preventDefault();
+        const data = {
+            player2: player2,
+            token: gameToken
+        }
+        try {
+            const url = "http://localhost:4000/api/game/join"
+            const res = await axios.post(url, data);
+            localStorage.setItem("token", res.data.token);
+            axios.defaults.headers.common['Authorization'] = localStorage.getItem("token");
+            navigate("/Multi/Game/" + gameToken);
+        } catch (error) {
+            setGameLink(React.createElement("p", {}, "Game doesn't exists."));
+        }
+    }
+
+    return (
+        <section className="setMulti">
+            <form onSubmit={(e) => handleSubmitHost(e)}>
+                <legend>Host a game</legend>
+                <div>
+                    <label target="player1">Player Name</label> <br />
+                    <input name="player1" id="player1" type="text" onChange={e => setPlayer1(e.target.value)} required /> <br />
+                </div>
+                <input className="CTA" type="submit" value="Create room" />
+                {gameLink}
+            </form>
+            <form onSubmit={(e) => handleSubmitJoin(e)}>
+                <legend>Join a game</legend>
+                <div>
+                    <label target="player2">Player Name</label> <br />
+                    <input name="player2" id="player2" type="text" onChange={e => setPlayer2(e.target.value)} required /> <br />
+                </div>
+                <div>
+                    <label target="room">Room's code</label> <br />
+                    <input name="room" id="room" type="text" onChange={e => setGameToken(e.target.value)} required /> <br />
+                </div>
+
+                <input className="CTA" type="submit" value="Join room" />
+            </form>
+
         </section>
     )
 }
@@ -208,115 +328,6 @@ export function MultiSession() {
                 <p>Winner: {winner}</p>
             </div>
             <Grid gridLength={gridLength} setGrid={setGrid} setWinner={setWinner} grid={grid} updateCell={updateCell} />
-        </section>
-    )
-}
-
-function Grid(props) {
-    // Draws a grid on which we can play tic tac toe.
-
-    const makeGrid = () => {
-        // Creates a new grid with a bidimensional array
-        // Time complexity: O(2n)
-        let thisGrid = [];
-        let row = [];
-
-        for (let i = 0; i < props.gridLength; i++) {
-            row.push(" ");
-        }
-        for (let i = 0; i < props.gridLength; i++) {
-            thisGrid.push([...row]);
-        }
-
-        props.setGrid(thisGrid);
-    }
-
-    useEffect(() => {
-        makeGrid();
-        props.setWinner();
-    }, [props.gridLength]);
-
-    return (
-        <article>
-            {props.grid.map((element, colIndex) => (
-                <div key={colIndex + "div"}>
-                    {element.map((cell, rowIndex) => (
-                        <input className="cell" type="submit" value={props.grid[colIndex][rowIndex]} key={colIndex + ", " + rowIndex}
-                            onClick={e => { props.updateCell(e) }} id={colIndex + "," + rowIndex} />
-                    ))}
-                    <br key={colIndex + ", br"} />
-                </div>
-            ))}
-        </article>
-    )
-}
-
-export function HostSession() {
-    // Page with 2 forms: 1 for hosting a game, the other for joining a game.
-
-    const navigate = useNavigate();
-    const [player1, setPlayer1] = useState();
-    const [player2, setPlayer2] = useState();
-    const [gameToken, setGameToken] = useState();
-    const [gameLink, setGameLink] = useState();
-
-    const handleSubmitHost = async (e) => {
-        e.preventDefault();
-        const data = {
-            player1: player1,
-        }
-        const url = "http://localhost:4000/api/game";
-        const res = await axios.post(url, data);
-
-        axios.defaults.headers.common['Authorization'] = `Bearer ` + res.data.token;
-
-        const gameURL = "/Multi/Game/" + res.data.token;
-        localStorage.setItem("token", res.data.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ` + localStorage.getItem("token");
-        setGameLink(React.createElement("a", { href: gameURL, className: "roomLink" }, "Game created, click here to join."));
-    }
-    const handleSubmitJoin = async (e) => {
-        e.preventDefault();
-        const data = {
-            player2: player2,
-            token: gameToken
-        }
-        try {
-            const url = "http://localhost:4000/api/game/join"
-            const res = await axios.post(url, data);
-            localStorage.setItem("token", res.data.token);
-            axios.defaults.headers.common['Authorization'] = localStorage.getItem("token");
-            navigate("/Multi/Game/" + gameToken);
-        } catch (error) {
-            setGameLink(React.createElement("p", {}, "Game doesn't exists."));
-        }
-    }
-
-    return (
-        <section className="setMulti">
-            <form onSubmit={(e) => handleSubmitHost(e)}>
-                <legend>Host a game</legend>
-                <div>
-                    <label target="player1">Player Name</label> <br />
-                    <input name="player1" id="player1" type="text" onChange={e => setPlayer1(e.target.value)} required /> <br />
-                </div>
-                <input className="CTA" type="submit" value="Create room" />
-                {gameLink}
-            </form>
-            <form onSubmit={(e) => handleSubmitJoin(e)}>
-                <legend>Join a game</legend>
-                <div>
-                    <label target="player2">Player Name</label> <br />
-                    <input name="player2" id="player2" type="text" onChange={e => setPlayer2(e.target.value)} required /> <br />
-                </div>
-                <div>
-                    <label target="room">Room's code</label> <br />
-                    <input name="room" id="room" type="text" onChange={e => setGameToken(e.target.value)} required /> <br />
-                </div>
-
-                <input className="CTA" type="submit" value="Join room" />
-            </form>
-
         </section>
     )
 }

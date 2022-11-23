@@ -1,3 +1,8 @@
+// ====================================================== Notice ======================================================
+// This file is used to get a cleaner controller, and thus will only be used for the multiplayer feature. It contains the logic to check who won the game, but also the logic to creates a new grid layout etc.
+
+
+// ====================================================== Imports ======================================================
 require("dotenv").config();
 const jwt = require('jsonwebtoken');
 
